@@ -17,16 +17,20 @@ df_nodupes.to_excel("Cleaned_Aptamer_Data.xlsx", index=False)
 
 #screening function to check if any of the targets have keywords that might mean they are a protein
 def screen_prot(target_names):
+    mask = []
     non_protein_keywords = ['cell', 'bacteria', 'virus', 'dna',
                             'rna', 'aptamer', 'oligonucleotide', 'peptide']
     # protein_keywords = ['protein', 'enzyme', 'receptor', 'antibody', 'kinase', 'factor', 'ligase', 'polymerase']
     for target in target_names: 
         if any(keyword in target.lower() for keyword in non_protein_keywords):
-            target_names.remove(target)
-    return target_names
+            mask.add(False)
+        else:
+            mask.add(True)
+    return mask
 
-target_col = df_nodupes["Target"]
-screened_targets = screen_prot(target_col)
+target_col = df_nodupes["Target"].tolist()
+mask = screen_prot(target_col)
+filtered = df_nodupes[mask] #removes screened proteins
 
 
 keeplist = []
