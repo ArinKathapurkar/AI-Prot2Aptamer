@@ -911,12 +911,12 @@ class AptamerScraper:
 
 # Usage
 if __name__ == "__main__":
-    scraper = AptamerScraper(headless=False)
+    scraper = AptamerScraper(headless=True)
     
     try:
         # Test with 30 entries to see if it works
         scraper.scrape_all(
-            limit=30,
+            limit=None,
             filter_dna=True,
             filter_protein=True
         )
