@@ -1,17 +1,8 @@
 """
-APTAMER-PROTEIN DATASET CREATOR
-Standalone script to run on your local machine
-
 This script:
 1. Reads aptamer_interactions.csv
 2. Fetches protein sequences from UniProt 
 3. Creates a complete training dataset
-
-REQUIREMENTS:
-    pip install pandas requests
-
-USAGE:
-    python create_aptamer_dataset.py
 """
 
 import pandas as pd

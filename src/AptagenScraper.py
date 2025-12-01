@@ -9,7 +9,43 @@ import pandas as pd
 import sqlite3
 import time
 import re
+import requests
 from typing import List, Dict
+class ProteinFetcher:
+    def __init__(self):
+        self.session = requests.Session()
+        self.cache = {}
+    
+    def fetch_protein_by_name(self, protein_name):
+        if protein_name in self.cache:
+            return self.cache[protein_name]
+        
+        try:
+            search_term = protein_name.split('(')[0].strip()
+            url = "https://rest.uniprot.org/uniprotkb/search"
+            params = {
+                'query': f'(protein_name:{search_term})',
+                'format': 'json',
+                'size': 1,
+                'fields': 'accession,sequence,organism_name,length'
+            }
+            response = self.session.get(url, params=params, timeout=10)
+            data = response.json()
+            
+            if 'results' in data and len(data['results']) > 0:
+                entry = data['results'][0]
+                result = {
+                    'uniprot_id': entry.get('primaryAccession', ''),
+                    'sequence': entry.get('sequence', {}).get('value', ''),
+                    'organism': entry.get('organism', {}).get('scientificName', ''),
+                    'length': entry.get('sequence', {}).get('length', 0)
+                }
+                self.cache[protein_name] = result
+                return result
+        except:
+            pass
+        return None
+    
 
 class AptamerScraper:
     def __init__(self, db_path='aptamer_database.db', headless=False):
@@ -26,6 +62,7 @@ class AptamerScraper:
         chrome_options.add_argument('--window-size=1920,1080')
         
         self.driver = webdriver.Chrome(options=chrome_options)
+        self.protein_fetcher = ProteinFetcher()
         self.setup_database()
     
     def setup_database(self):
@@ -83,7 +120,12 @@ class AptamerScraper:
                 binding_temp TEXT,
                 doi TEXT,
                 source_url TEXT UNIQUE,
-                date_scraped TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                date_scraped TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                protein_uniprot_id TEXT,
+                protein_sequence TEXT,
+                protein_organism TEXT,
+                protein_length INTEGER,
+                protein_fetch_status TEXT
             )
         ''')
         
@@ -714,6 +756,11 @@ class AptamerScraper:
                         data['sequence_length'],
                         data['binding_conditions'],
                         data['binding_temp'],
+                        data['protein_uniprot_id'],
+                        data['protein_sequence'],
+                        data['protein_organism'],
+                        data['protein_length'],
+                        data['protein_fetch_status'],
                         data['doi'],
                         data['source_url']
                     ))
@@ -723,8 +770,10 @@ class AptamerScraper:
                     cursor.execute('''
                         INSERT INTO aptamers (target_name, aptamer_type, target_category,
                                              kd_value, sequence, sequence_length,
-                                             binding_conditions, binding_temp, doi, source_url)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                             binding_conditions, binding_temp, doi, source_url,
+                                             protein_uniprot_id, protein_sequence, protein_organism,
+                                             protein_length, protein_fetch_status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         data['target_name'],
                         data['aptamer_type'],
@@ -735,7 +784,12 @@ class AptamerScraper:
                         data['binding_conditions'],
                         data['binding_temp'],
                         data['doi'],
-                        data['source_url']
+                        data['source_url'],
+                        data.get('protein_uniprot_id', ''),
+                        data.get('protein_sequence', ''),
+                        data.get('protein_organism', ''),
+                        data.get('protein_length', 0),
+                        data.get('protein_fetch_status', 'not_attempted')
                     ))
                     action = "Saved"
             else:
@@ -743,8 +797,10 @@ class AptamerScraper:
                 cursor.execute('''
                     INSERT INTO aptamers (target_name, aptamer_type, target_category,
                                          kd_value, sequence, sequence_length,
-                                         binding_conditions, binding_temp, doi, source_url)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                         binding_conditions, binding_temp, doi, source_url,
+                                         protein_uniprot_id, protein_sequence, protein_organism,
+                                         protein_length, protein_fetch_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     data['target_name'],
                     data['aptamer_type'],
@@ -755,7 +811,12 @@ class AptamerScraper:
                     data['binding_conditions'],
                     data['binding_temp'],
                     data['doi'],
-                    data['source_url']
+                    data['source_url'],
+                    data.get('protein_uniprot_id', ''),
+                    data.get('protein_sequence', ''),
+                    data.get('protein_organism', ''),
+                    data.get('protein_length', 0),
+                    data.get('protein_fetch_status', 'not_attempted')
                 ))
                 action = "Saved"
             
@@ -811,6 +872,17 @@ class AptamerScraper:
             print(f"[{i}/{len(entry_urls)}] {url.split('/')[-2][:40]}...")
             
             data = self.extract_aptamer_details(url)
+            
+            if data and data.get('target_category') == 'Protein':
+                print(f"      → Fetching protein...")
+                protein = self.protein_fetcher.fetch_protein_by_name(data['target_name'])
+                if protein:
+                    data['protein_uniprot_id'] = protein['uniprot_id']
+                    data['protein_sequence'] = protein['sequence']
+                    data['protein_organism'] = protein['organism']
+                    data['protein_length'] = protein['length']
+                    print(f"        ✓ {protein['uniprot_id']}")
+                    time.sleep(0.3)  # Rate limiting
             
             if data:
                 # Apply filters
