@@ -383,9 +383,6 @@ print(f"✓ Built library with {len(kmer_library_3)} unique 3-mers")
 print(f"✓ Built transition matrix with {len(transition_matrix_3)} transitions")
 
 
-# ==============================================================================
-# EXAMPLE 1: TEST WITH A PROTEIN FROM YOUR TEST SET (Original approach)
-# ==============================================================================
 
 print("\n" + "="*80)
 print("EXAMPLE 1: TESTING WITH PROTEIN FROM TEST SET")
@@ -413,17 +410,8 @@ for i, candidate in enumerate(candidates_test, 1):
     print(f"\n#{i}: {seq} (Score: {score:.4f})")
 
 
-# ==============================================================================
-# EXAMPLE 2: TEST WITH A COMPLETELY NEW PROTEIN SEQUENCE
-# ==============================================================================
-
-# CUSTOMIZE THIS: Put your own protein sequence here!
 new_protein_sequence = input("Enter a Custom Protein")
 new_protein_name = "My Custom Test Protein"
-
-# Or try a real protein (example: human insulin)
-# new_protein_sequence = "MALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKTRREAEDLQVGQVELGGGPGAGSLQPLALEGSLQKRGIVEQCCTSICSLYQLENYCN"
-# new_protein_name = "Human Insulin"
 
 candidates_new = generate_aptamers_for_new_protein(
     protein_sequence=new_protein_sequence,
