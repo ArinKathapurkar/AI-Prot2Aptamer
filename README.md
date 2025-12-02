@@ -1,1 +1,1 @@
-# AI-Prot2Aptamer
+# Prot2Aptamer
