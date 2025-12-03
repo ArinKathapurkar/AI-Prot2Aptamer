@@ -369,7 +369,7 @@ def generate_aptamers_for_new_protein(protein_sequence, protein_name="Unknown Pr
 
 # ==============================================================================
 # BUILD K-MER LIBRARY (Do this once)
-# ==============================================================================
+# =======-=======================================================================
 
 print("\n" + "="*80)
 print("BUILDING K-MER LIBRARY")
@@ -381,6 +381,17 @@ kmer_library_3 = build_kmer_library(real_sequences, k=3)
 transition_matrix_3 = build_transition_matrix(real_sequences, k=3)
 print(f"✓ Built library with {len(kmer_library_3)} unique 3-mers")
 print(f"✓ Built transition matrix with {len(transition_matrix_3)} transitions")
+
+import pickle
+
+pickle.dump(kmer_library_3, open('kmer_library.pkl', 'wb'))
+pickle.dump(transition_matrix_3, open('transition_matrix.pkl', 'wb'))
+print("✓ Saved k-mer library and transition matrix!")
+
+
+
+
+
 
 
 
